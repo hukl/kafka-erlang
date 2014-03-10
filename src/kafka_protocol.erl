@@ -68,8 +68,15 @@ encode_message(Payload) ->
     Checksum = erlang:crc32(Payload),
     << Length:32/integer, Magic:8/integer, Checksum:32/integer, Payload/binary >>.
 
-parse_messages(Bs) ->
-    parse_messages(Bs, [], 0).
+parse_messages(<<L:32/integer, _/binary>> = Bs) ->
+    try 
+        % Check if the payload starts with a parsable message
+        parse_message(L, Bs) 
+    catch
+        % Throw an error if the message can not be parsed
+        error:function_clause -> erlang:error(invalid_message_at_offset)
+    end,
+    parse_messages(Bs, [], 0). 
 
 parse_messages(<<>>, Acc, Size) ->
     {lists:reverse(Acc), Size};
